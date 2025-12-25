@@ -18,25 +18,47 @@
   <meta charset="UTF-8">
   <title>Ashconsoles</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-      padding: 20px;
-    }
-    a {
-      color: #38bdf8;
-      text-decoration: none;
-    }
-    li {
-      margin: 8px 0;
-    }
-  </style>
+body {
+  font-family: system-ui, Arial, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  padding: 16px;
+}
+
+#appsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 16px;
+}
+
+.app {
+  text-align: center;
+  text-decoration: none;
+  color: #e5e7eb;
+}
+
+.app img {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  object-fit: cover;
+  background: #020617;
+}
+
+.app span {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.2;
+  word-break: break-word;
+}
+</style>
+
 </head>
 <body>
 
 <h2>All Pages</h2>
-<ul id="pagesList">Loading…</ul>
+<div id="appsGrid">Loading…</div>
 
 <script>
 const username = "ashconsoles";
@@ -50,6 +72,30 @@ if ('caches' in window) {
 }
 
 /* 📄 FETCH PAGE TITLE */
+const fallbackIcon =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23020417'/><text x='50%' y='55%' font-size='42' fill='%23fff' text-anchor='middle'>🌐</text></svg>";
+
+async function getBestIcon(repo) {
+  const base = `https://${username}.github.io/${repo}`;
+
+  const icons = [
+    `${base}/icon-512.png`,
+    `${base}/icon-192.png`,
+    `${base}/icon-180.png`,
+    `${base}/favicon.ico`,
+    `${base}/apple-touch-icon.png`
+  ];
+
+  for (const url of icons) {
+    try {
+      const res = await fetch(url, { method: "HEAD", cache: "no-store" });
+      if (res.ok) return url;
+    } catch {}
+  }
+
+  return fallbackIcon;
+}
+
 async function getPageTitle(repo) {
   const paths = [
     `https://raw.githubusercontent.com/${username}/${repo}/main/index.html`,
@@ -69,50 +115,58 @@ async function getPageTitle(repo) {
     } catch {}
   }
 
-  return repo; // fallback
+  return repo;
 }
-
 
 /* 🚀 LOAD GITHUB PAGES */
 async function loadPages() {
+  const grid = document.getElementById("appsGrid");
+
   try {
-    list.textContent = "Loading…";
+    grid.textContent = "Loading…";
 
     const res = await fetch(
       `https://api.github.com/users/${username}/repos?per_page=100&ts=${Date.now()}`,
       { cache: "no-store" }
     );
 
-    if (!res.ok) throw new Error("GitHub API error");
+    if (!res.ok) throw new Error();
 
     const repos = await res.json();
-    list.innerHTML = "";
-
-    let found = false;
+    grid.innerHTML = "";
 
     for (const repo of repos) {
-      if (repo.has_pages) {
-        found = true;
-        const title = await getPageTitle(repo.name);
-        const url = `https://${username}.github.io/${repo.name}/`;
+      if (!repo.has_pages) continue;
 
-        const li = document.createElement("li");
-        li.innerHTML = `<a href="${url}">${title}</a>`;
-        list.appendChild(li);
-      }
+      const [title, icon] = await Promise.all([
+        getPageTitle(repo.name),
+        getBestIcon(repo.name)
+      ]);
+
+      const url = `https://${username}.github.io/${repo.name}/`;
+
+      const a = document.createElement("a");
+      a.className = "app";
+      a.href = url;
+
+      a.innerHTML = `
+        <img src="${icon}" alt="">
+        <span>${title}</span>
+      `;
+
+      grid.appendChild(a);
     }
 
-    if (!found) {
-      list.innerHTML = "<li>No GitHub Pages found.</li>";
+    if (!grid.children.length) {
+      grid.textContent = "No Pages found.";
     }
 
   } catch (e) {
     console.error(e);
-    list.innerHTML = "<li>Failed to load pages.</li>";
+    grid.textContent = "Failed to load pages.";
   }
 }
 
-/* ✅ THIS WAS MISSING */
 loadPages();
 </script>
 
