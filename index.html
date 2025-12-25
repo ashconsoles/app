@@ -28,27 +28,54 @@
 const username = "ashconsoles"; // 🔴 change this
 const list = document.getElementById("pagesList");
 
+/* 🔥 FORCE HARD RELOAD ON EVERY VISIT (Web App Safe) */
+if (performance.navigation.type === 2) {
+  location.reload(true);
+}
+
+/* 🧹 CLEAR SERVICE WORKER CACHE (if exists) */
+if ('caches' in window) {
+  caches.keys().then(names => {
+    names.forEach(name => caches.delete(name));
+  });
+}
+
+/* 📄 FETCH PAGE TITLE WITH NO CACHE */
 async function getPageTitle(repo) {
   try {
-    const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/main/index.html`;
-    const res = await fetch(rawURL);
+    const ts = Date.now(); // cache buster
+    const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/main/index.html?ts=${ts}`;
 
-    if (!res.ok) throw new Error("No index.html");
+    const res = await fetch(rawURL, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache"
+      }
+    });
+
+    if (!res.ok) throw new Error();
 
     const html = await res.text();
     const match = html.match(/<title>(.*?)<\/title>/i);
-    return match ? match[1] : repo;
+    return match ? match[1].trim() : repo;
   } catch {
     return repo;
   }
 }
 
+/* 🚀 LOAD GITHUB PAGES (NO CACHE) */
 async function loadPages() {
   list.innerHTML = "Loading…";
 
-  const repos = await fetch(
-    `https://api.github.com/users/${username}/repos?per_page=100`
-  ).then(r => r.json());
+  const ts = Date.now();
+  const apiURL = `https://api.github.com/users/${username}/repos?per_page=100&ts=${ts}`;
+
+  const repos = await fetch(apiURL, {
+    cache: "no-store",
+    headers: {
+      "Cache-Control": "no-cache"
+    }
+  }).then(r => r.json());
 
   list.innerHTML = "";
   let found = false;
@@ -61,7 +88,7 @@ async function loadPages() {
       const pageURL = `https://${username}.github.io/${repo.name}/`;
 
       const li = document.createElement("li");
-      li.innerHTML = `<a href="${pageURL}" target="_blank">${title}</a>`;
+      li.innerHTML = `<a href="${pageURL}" target="_self">${title}</a>`;
       list.appendChild(li);
     }
   }
@@ -73,6 +100,7 @@ async function loadPages() {
 
 loadPages();
 </script>
+
 
 
 </body>
