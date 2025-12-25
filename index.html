@@ -80,40 +80,49 @@ const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/index.html
 
 /* 🚀 LOAD GITHUB PAGES (NO CACHE) */
 async function loadPages() {
-  list.innerHTML = "Loading…";
+  try {
+    list.textContent = "Loading…";
 
-  const ts = Date.now();
-  const apiURL = `https://api.github.com/users/${username}/repos?per_page=100&ts=${ts}`;
+    const ts = Date.now();
+    const apiURL = `https://api.github.com/users/${username}/repos?per_page=100&ts=${ts}`;
 
-  const repos = await fetch(apiURL, {
-    cache: "no-store",
-    headers: {
-      "Cache-Control": "no-cache"
+    const res = await fetch(apiURL, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache"
+      }
+    });
+
+    if (!res.ok) throw new Error("GitHub API failed");
+
+    const repos = await res.json();
+    list.innerHTML = "";
+
+    let found = false;
+
+    for (const repo of repos) {
+      if (repo.has_pages) {
+        found = true;
+
+        const title = await getPageTitle(repo.name);
+        const pageURL = `https://${username}.github.io/${repo.name}/`;
+
+        const li = document.createElement("li");
+        li.innerHTML = `<a href="${pageURL}">${title}</a>`;
+        list.appendChild(li);
+      }
     }
-  }).then(r => r.json());
 
-  list.innerHTML = "";
-  let found = false;
-
-  for (const repo of repos) {
-    if (repo.has_pages) {
-      found = true;
-
-      const title = await getPageTitle(repo.name);
-      const pageURL = `https://${username}.github.io/${repo.name}/`;
-
-      const li = document.createElement("li");
-      li.innerHTML = `<a href="${pageURL}" target="_self">${title}</a>`;
-      list.appendChild(li);
+    if (!found) {
+      list.innerHTML = "<li>No GitHub Pages found.</li>";
     }
-  }
 
-  if (!found) {
-    list.innerHTML = "<li>No GitHub Pages found.</li>";
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = "<li>Failed to load pages. Try again later.</li>";
   }
 }
 
-loadPages();
 </script>
 
   <script>
