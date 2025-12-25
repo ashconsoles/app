@@ -51,17 +51,27 @@ if ('caches' in window) {
 
 /* 📄 FETCH PAGE TITLE */
 async function getPageTitle(repo) {
-  try {
-    const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/index.html?ts=${Date.now()}`;
-    const res = await fetch(rawURL, { cache: "no-store" });
-    if (!res.ok) throw new Error();
-    const html = await res.text();
-    const match = html.match(/<title>(.*?)<\/title>/i);
-    return match ? match[1].trim() : repo;
-  } catch {
-    return repo;
+  const paths = [
+    `https://raw.githubusercontent.com/${username}/${repo}/main/index.html`,
+    `https://raw.githubusercontent.com/${username}/${repo}/master/index.html`,
+    `https://raw.githubusercontent.com/${username}/${repo}/gh-pages/index.html`,
+    `https://raw.githubusercontent.com/${username}/${repo}/docs/index.html`
+  ];
+
+  for (const path of paths) {
+    try {
+      const res = await fetch(`${path}?ts=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) continue;
+
+      const html = await res.text();
+      const match = html.match(/<title>(.*?)<\/title>/i);
+      if (match) return match[1].trim();
+    } catch {}
   }
+
+  return repo; // fallback
 }
+
 
 /* 🚀 LOAD GITHUB PAGES */
 async function loadPages() {
