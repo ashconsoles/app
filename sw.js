@@ -6,5 +6,7 @@ self.addEventListener("activate", e => {
   self.clients.claim();
 });
 
-/* ⚠️ DO NOT CACHE ANYTHING */
-self.addEventListener("fetch", () => {});
+/* ✅ LET NETWORK WORK NORMALLY */
+self.addEventListener("fetch", event => {
+  event.respondWith(fetch(event.request));
+});
