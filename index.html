@@ -57,6 +57,38 @@ body {
   line-height: 1.2;
   word-break: break-word;
 }
+
+    /* Fullscreen App Viewer */
+#viewer {
+  position: fixed;
+  inset: 0;
+  background: #020617;
+  z-index: 9999;
+  display: none;
+}
+
+#viewer iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Close Button */
+#closeViewer {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 10000;
+}
+
 </style>
 
 </head>
@@ -154,7 +186,12 @@ async function loadPages() {
 
       const a = document.createElement("a");
       a.className = "app";
-      a.href = url;
+     a.href = "#";
+a.addEventListener("click", e => {
+  e.preventDefault();
+  openViewer(url);
+});
+
 
       a.innerHTML = `
         <img src="${icon}" alt="">
@@ -183,9 +220,38 @@ document.addEventListener("DOMContentLoaded", loadPages);
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
+
+
+const viewer = document.getElementById("viewer");
+const frame = document.getElementById("viewerFrame");
+const closeBtn = document.getElementById("closeViewer");
+
+function openViewer(url) {
+  frame.src = url + "?ts=" + Date.now();
+  viewer.style.display = "block";
+  document.body.style.overflow = "hidden";
+}
+
+function closeViewer() {
+  frame.src = "";
+  viewer.style.display = "none";
+  document.body.style.overflow = "";
+}
+
+closeBtn.addEventListener("click", closeViewer);
+
+
+    
 </script>
 
 
+
+
+  <!-- Fullscreen Viewer -->
+<div id="viewer">
+  <button id="closeViewer">✕</button>
+  <iframe id="viewerFrame"></iframe>
+</div>
 
 </body>
 </html>
