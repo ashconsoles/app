@@ -58,7 +58,8 @@ if ('caches' in window) {
 async function getPageTitle(repo) {
   try {
     const ts = Date.now(); // cache buster
-    const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/main/index.html?ts=${ts}`;
+const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/index.html?ts=${ts}`;
+
 
     const res = await fetch(rawURL, {
       cache: "no-store",
