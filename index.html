@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ashconsoles</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 20px;
+    }
+    a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+    li {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+<h2>GitHub Pages Sites</h2>
+<ul id="pagesList">Loading…</ul>
+
+<script>
+const username = "ashconsoles"; // 🔴 change this
+
+async function loadPages() {
+  const list = document.getElementById("pagesList");
+  list.innerHTML = "";
+
+  const repos = await fetch(`https://api.github.com/users/${username}/repos?per_page=100`)
+    .then(r => r.json());
+
+  let found = false;
+
+  repos.forEach(repo => {
+    if (repo.has_pages) {
+      found = true;
+      const li = document.createElement("li");
+      const url = `https://${username}.github.io/${repo.name}/`;
+      li.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+      list.appendChild(li);
+    }
+  });
+
+  if (!found) {
+    list.innerHTML = "<li>No GitHub Pages found.</li>";
+  }
+}
+
+loadPages();
+</script>
+
+</body>
+</html>
