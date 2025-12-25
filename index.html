@@ -26,25 +26,45 @@
 
 <script>
 const username = "ashconsoles"; // 🔴 change this
+const list = document.getElementById("pagesList");
+
+async function getPageTitle(repo) {
+  try {
+    const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/main/index.html`;
+    const res = await fetch(rawURL);
+
+    if (!res.ok) throw new Error("No index.html");
+
+    const html = await res.text();
+    const match = html.match(/<title>(.*?)<\/title>/i);
+    return match ? match[1] : repo;
+  } catch {
+    return repo;
+  }
+}
 
 async function loadPages() {
-  const list = document.getElementById("pagesList");
+  list.innerHTML = "Loading…";
+
+  const repos = await fetch(
+    `https://api.github.com/users/${username}/repos?per_page=100`
+  ).then(r => r.json());
+
   list.innerHTML = "";
-
-  const repos = await fetch(`https://api.github.com/users/${username}/repos?per_page=100`)
-    .then(r => r.json());
-
   let found = false;
 
-  repos.forEach(repo => {
+  for (const repo of repos) {
     if (repo.has_pages) {
       found = true;
+
+      const title = await getPageTitle(repo.name);
+      const pageURL = `https://${username}.github.io/${repo.name}/`;
+
       const li = document.createElement("li");
-      const url = `https://${username}.github.io/${repo.name}/`;
-      li.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+      li.innerHTML = `<a href="${pageURL}" target="_blank">${title}</a>`;
       list.appendChild(li);
     }
-  });
+  }
 
   if (!found) {
     list.innerHTML = "<li>No GitHub Pages found.</li>";
@@ -53,6 +73,7 @@ async function loadPages() {
 
 loadPages();
 </script>
+
 
 </body>
 </html>
