@@ -39,37 +39,22 @@
 <ul id="pagesList">Loading…</ul>
 
 <script>
-const username = "ashconsoles"; // 🔴 change this
+const username = "ashconsoles";
 const list = document.getElementById("pagesList");
 
-/* 🔥 FORCE HARD RELOAD ON EVERY VISIT (Web App Safe) */
-if (performance.navigation.type === 2) {
-  location.reload(true);
-}
-
-/* 🧹 CLEAR SERVICE WORKER CACHE (if exists) */
+/* 🧹 CLEAR SERVICE WORKER CACHE (optional but safe) */
 if ('caches' in window) {
   caches.keys().then(names => {
     names.forEach(name => caches.delete(name));
   });
 }
 
-/* 📄 FETCH PAGE TITLE WITH NO CACHE */
+/* 📄 FETCH PAGE TITLE */
 async function getPageTitle(repo) {
   try {
-    const ts = Date.now(); // cache buster
-const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/index.html?ts=${ts}`;
-
-
-    const res = await fetch(rawURL, {
-      cache: "no-store",
-      headers: {
-        "Cache-Control": "no-cache"
-      }
-    });
-
+    const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/index.html?ts=${Date.now()}`;
+    const res = await fetch(rawURL, { cache: "no-store" });
     if (!res.ok) throw new Error();
-
     const html = await res.text();
     const match = html.match(/<title>(.*?)<\/title>/i);
     return match ? match[1].trim() : repo;
@@ -78,22 +63,17 @@ const rawURL = `https://raw.githubusercontent.com/${username}/${repo}/index.html
   }
 }
 
-/* 🚀 LOAD GITHUB PAGES (NO CACHE) */
+/* 🚀 LOAD GITHUB PAGES */
 async function loadPages() {
   try {
     list.textContent = "Loading…";
 
-    const ts = Date.now();
-    const apiURL = `https://api.github.com/users/${username}/repos?per_page=100&ts=${ts}`;
+    const res = await fetch(
+      `https://api.github.com/users/${username}/repos?per_page=100&ts=${Date.now()}`,
+      { cache: "no-store" }
+    );
 
-    const res = await fetch(apiURL, {
-      cache: "no-store",
-      headers: {
-        "Cache-Control": "no-cache"
-      }
-    });
-
-    if (!res.ok) throw new Error("GitHub API failed");
+    if (!res.ok) throw new Error("GitHub API error");
 
     const repos = await res.json();
     list.innerHTML = "";
@@ -103,12 +83,11 @@ async function loadPages() {
     for (const repo of repos) {
       if (repo.has_pages) {
         found = true;
-
         const title = await getPageTitle(repo.name);
-        const pageURL = `https://${username}.github.io/${repo.name}/`;
+        const url = `https://${username}.github.io/${repo.name}/`;
 
         const li = document.createElement("li");
-        li.innerHTML = `<a href="${pageURL}">${title}</a>`;
+        li.innerHTML = `<a href="${url}">${title}</a>`;
         list.appendChild(li);
       }
     }
@@ -117,13 +96,16 @@ async function loadPages() {
       list.innerHTML = "<li>No GitHub Pages found.</li>";
     }
 
-  } catch (err) {
-    console.error(err);
-    list.innerHTML = "<li>Failed to load pages. Try again later.</li>";
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = "<li>Failed to load pages.</li>";
   }
 }
 
+/* ✅ THIS WAS MISSING */
+loadPages();
 </script>
+
 
   <script>
 if ("serviceWorker" in navigator) {
